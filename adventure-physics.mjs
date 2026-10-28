@@ -13,7 +13,35 @@ export function recoverStairFall(s){if(!s.stairFallArmed||s.slideStage==='slidin
 // side. Those footprints hold nothing to do, so ease the cat back out to the
 // nearest open edge instead of leaving it under the structure.
 export function recoverUnderStructure(s){const c=s.cat;if(s.aboard||s.slideStage==='sliding'||!c.grounded)return false;const surf=adventureHeight(c.x,c.z),terr=terrainHeight(c.x,c.z);if(surf-terr<=2.2||c.y>terr+.15)return false;if(Math.abs(c.x-SLIDE.stairX)<1.3)c.x=40.6;else if(c.z<-30.5)c.z=-34.2;else c.x=c.x<30?24.2:35.8;c.y=terrainHeight(c.x,c.z);c.vy=0;c.grounded=true;s.target=null;s.stairFallArmed=false;return true;}
-export function createAdventure(){const s=newWorld(true);s.bounds=58;s.groundHeight=(x,z)=>supportHeight(s,x,z);s.stairFallArmed=false;s.cat.x=0;s.cat.z=6;s.ball.x=-1;s.ball.z=4;s.switchX=-1;s.switchZ=-1;s.parts=[];s.partPositions=Object.fromEntries(PARTS.map(p=>[p.id,{...p}]));s.carriedPart=null;s.partRequested=null;s.events=[];s.aboard=false;s.boarding=false;s.oarsHeld={left:false,right:false};s.boat={x:-20.5,z:-18,y:terrainHeight(-20.5,-18),vx:0,vz:0,heading:Math.PI*1.5,strokeLeft:0,strokeRight:0,afloat:false,held:false,requested:false};s.slideRamp=false;s.slid=false;s.slideStage=null;s.slideSpeed=0;s.slideProgress=0;s.slideGateOpen=false;s.water={contains:lakeContains,island:islandAt};s.extraSupports=[...WALLS,{x:30,z:30,w:4,d:1,y:2.5,h:9,slideGate:true},{x:-37,z:-16,w:2.5,d:2.5,y:0,h:.35}];return s;}
+// moveCat() tests each axis step against obstacle rectangles widened by the
+// cat's radius, so once the cat's centre ends up inside such a rectangle
+// every further step is rejected and it can never walk out again. That state
+// is reachable without walking into it: the delivery platform's door
+// rectangle (z=-3.4, h=4) reaches past the platform corner, so a cat that
+// drops off the platform top beside the corner lands inside it at ground
+// level, and separateCatFromBox() can likewise ease the cat into a wall it
+// never checks against. Detect "has somewhere to go but is not moving" and
+// lift the cat to the nearest open ground, like the recoveries above.
+const CAT_R=.48,STUCK_SECONDS=1.8,STUCK_PROGRESS=.12;
+function stuckObstacles(s){return[{...LEVEL.ledge,y:0,h:LEVEL.ledge.top},s.box,...(s.extraSupports||[]),...(s.mission&&!s.doorOpen?[{x:0,z:-3.4,w:7,d:.25,y:0,h:4}]:[])];}
+function spotBlocked(s,x,z,y,pad){return stuckObstacles(s).some(o=>Math.abs(x-o.x)<o.w/2+pad&&Math.abs(z-o.z)<o.d/2+pad&&y<o.y+o.h-.08&&y+1.85>o.y);}
+function blockedDirections(s){const c=s.cat;let n=0;for(const[dx,dz]of[[1,0],[-1,0],[0,1],[0,-1]]){const x=c.x+dx*.3,z=c.z+dz*.3;if((lakeContains(x,z)&&!islandAt(x,z))||spotBlocked(s,x,z,c.y,CAT_R))n++;}return n;}
+function stuckEscapeSpot(s){const c=s.cat;for(let r=.5;r<=4.5;r+=.5){const steps=Math.max(8,Math.round(r*8));for(let i=0;i<steps;i++){const a=i/steps*Math.PI*2,x=c.x+Math.sin(a)*r,z=c.z+Math.cos(a)*r;if(Math.abs(x)>(s.bounds??58)||Math.abs(z)>(s.bounds??58))continue;const terr=terrainHeight(x,z);if(adventureHeight(x,z)-terr>.35||Math.abs(terr-c.y)>1.2)continue;if(lakeContains(x,z)&&!islandAt(x,z))continue;if(spotBlocked(s,x,z,terr,CAT_R+.02))continue;return{x,z,y:terr};}}return null;}
+export function recoverStuck(s,intent,dt=1/60){const c=s.cat;
+if(s.aboard||s.slideStage==='sliding'||s.grabbed||!intent){s.stuckTime=0;s.stuckAnchor=null;return false;}
+if(!c.grounded)return false;
+if(!s.stuckAnchor){s.stuckAnchor={x:c.x,z:c.z};s.stuckTime=0;return false;}
+if(Math.hypot(c.x-s.stuckAnchor.x,c.z-s.stuckAnchor.z)>STUCK_PROGRESS){s.stuckAnchor={x:c.x,z:c.z};s.stuckTime=0;return false;}
+s.stuckTime=(s.stuckTime||0)+dt;
+if(s.stuckTime<STUCK_SECONDS)return false;
+// Pressing straight at one wall or at the water's edge is normal play, not a
+// wedge: only rescue when the cat is boxed in on at least two sides.
+if(blockedDirections(s)<2){s.stuckTime=0;return false;}
+const spot=stuckEscapeSpot(s);
+s.stuckTime=0;s.stuckAnchor=null;
+if(!spot)return false;
+c.x=spot.x;c.z=spot.z;c.y=spot.y;c.vy=0;c.grounded=true;s.target=null;s.stairFallArmed=false;return true;}
+export function createAdventure(){const s=newWorld(true);s.bounds=58;s.groundHeight=(x,z)=>supportHeight(s,x,z);s.stairFallArmed=false;s.stuckTime=0;s.stuckAnchor=null;s.cat.x=0;s.cat.z=6;s.ball.x=-1;s.ball.z=4;s.switchX=-1;s.switchZ=-1;s.parts=[];s.partPositions=Object.fromEntries(PARTS.map(p=>[p.id,{...p}]));s.carriedPart=null;s.partRequested=null;s.events=[];s.aboard=false;s.boarding=false;s.oarsHeld={left:false,right:false};s.boat={x:-20.5,z:-18,y:terrainHeight(-20.5,-18),vx:0,vz:0,heading:Math.PI*1.5,strokeLeft:0,strokeRight:0,afloat:false,held:false,requested:false};s.slideRamp=false;s.slid=false;s.slideStage=null;s.slideSpeed=0;s.slideProgress=0;s.slideGateOpen=false;s.water={contains:lakeContains,island:islandAt};s.extraSupports=[...WALLS,{x:30,z:30,w:4,d:1,y:2.5,h:9,slideGate:true},{x:-37,z:-16,w:2.5,d:2.5,y:0,h:.35}];return s;}
 export function openSlideGate(s){if(s.cat.x>23&&s.cat.x<37&&s.cat.z>18.5&&s.cat.z<29.5&&Math.hypot(s.cat.x-36,s.cat.z-28)<2){s.slideGateOpen=true;s.extraSupports=s.extraSupports.filter(o=>!o.slideGate);return true;}return false;}
 function partDropSurface(s,x,z){
 let y=s.groundHeight(x,z);
@@ -47,12 +75,13 @@ export function grabOar(s,side){if(!s.aboard)return false;s.oarsHeld[side]=!s.oa
 export function rowBoat(s,side,strength=1){if(!s.aboard||!s.oarsHeld[side])return false;const b=s.boat,k=Math.max(-1.5,Math.min(1.5,strength));b.heading+=(side==='left'?1:-1)*.15*k;b.vx+=Math.sin(b.heading)*1.25*k;b.vz+=Math.cos(b.heading)*1.25*k;b[side==='left'?'strokeLeft':'strokeRight']=k;return true;}
 export function moveAdventure(s,x,z){if(!s.aboard)setTarget(s,x,z);}
 export function startSlide(s){return false;}
-export function stepAdventure(s,input={},dt=1/60){s.won=false;if(!s.aboard&&s.slideStage!=='sliding'&&Math.abs(s.cat.x-39)<1.2&&s.cat.z>=-33&&s.cat.z<=22&&s.cat.y>terrainHeight(s.cat.x,s.cat.z)+2)s.stairFallArmed=true;
+export function stepAdventure(s,input={},dt=1/60){s.won=false;const moveIntent=!!s.target||Math.hypot(input.x||0,input.z||0)>.05;if(!s.aboard&&s.slideStage!=='sliding'&&Math.abs(s.cat.x-39)<1.2&&s.cat.z>=-33&&s.cat.z<=22&&s.cat.y>terrainHeight(s.cat.x,s.cat.z)+2)s.stairFallArmed=true;
 if(s.aboard){const b=s.boat;b.vx*=Math.exp(-dt*.5);b.vz*=Math.exp(-dt*.5);b.strokeLeft*=Math.exp(-dt*4);b.strokeRight*=Math.exp(-dt*4);const nx=b.x+b.vx*dt,nz=b.z+b.vz*dt;if(lakeContains(nx,nz)){b.x=nx;b.z=nz;}else{b.vx*=.2;b.vz*=.2;}s.cat.x=b.x;s.cat.z=b.z;s.cat.y=.42;s.cat.heading=b.heading;s.cat.grounded=true;}
 else if(s.slideStage==='sliding'){s.slideSpeed=Math.min(22,s.slideSpeed+9*dt);s.cat.x=30;s.cat.z=Math.min(26,s.cat.z+s.slideSpeed*dt);s.cat.y=adventureHeight(s.cat.x,s.cat.z)+.11;s.cat.heading=0;s.cat.vy=0;s.cat.grounded=true;if(s.cat.z>=26){s.slideStage=null;s.stairFallArmed=false;s.slid=true;s.cat.y=2.5;s.target=null;}}
 else{stepWorld(s,input,dt);if(s.boarding&&Math.hypot(s.cat.x-s.boat.x,s.cat.z-s.boat.z)<2.4)boardBoat(s);if(Math.abs(s.cat.x-30)<3.7&&s.cat.z>-31.4&&s.cat.z<-29&&s.cat.y>19){s.slideStage='sliding';s.slideSpeed=0;s.target=null;}}
 recoverStairFall(s);
 recoverUnderStructure(s);
+recoverStuck(s,moveIntent,dt);
 if(s.boat.requested&&Math.hypot(s.cat.x-s.boat.x,s.cat.z-s.boat.z)<2){s.boat.held=true;s.boat.requested=false;s.target=null;s.grabbed=false;s.grabRequested=false;}
 if(s.boat.held){const b=s.boat;b.x=s.cat.x+Math.sin(s.cat.heading)*1.8;b.z=s.cat.z+Math.cos(s.cat.heading)*1.8;b.y=s.cat.y+.6;b.heading=s.cat.heading;b.vx=b.vz=0;}
 if(s.partRequested){const p=s.partPositions[s.partRequested];if(Math.hypot(s.cat.x-p.x,s.cat.z-p.z)<1.15&&Math.abs(s.cat.y-p.y)<1.4){s.carriedPart=s.partRequested;s.partRequested=null;s.target=null;s.grabbed=false;s.grabRequested=false;}}
