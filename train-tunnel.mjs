@@ -45,7 +45,7 @@ for(const [key,label] of Object.entries(TUNNEL_PREDICTIONS)){const b=document.cr
 function openPrediction(){picked=null;$('tpGo').disabled=true;$('tpChoices').querySelectorAll('button').forEach(o=>o.setAttribute('aria-pressed','false'));
  $('tpText').innerHTML=`列車の長さは ${TRAIN_LENGTH}。トンネル ${state.stage+1} の長さは ${tunnel().toFixed(1)} で、列車より短い。<br><strong>ホームから見て</strong>、列車はトンネルにすっぽり収まる？`;
  card.hidden=false;}
-$('tpGo').onclick=()=>{state.prediction=picked;card.hidden=true;phase='choose';$('tnFeedback').textContent='速さを選んで「走らせる」。ホームから見た列車の長さが、トンネル以下になれば収まります。';};
+$('tpGo').onclick=()=>{state.prediction=picked;card.hidden=true;phase='choose';$('tnFeedback').textContent='速さを選んで「走らせる」。ホームから見た長さがトンネル以下で収まる。';};
 function syncViewButtons(){$('tnViewHome').setAttribute('aria-pressed',String(view==='home'));$('tnViewTrain').setAttribute('aria-pressed',String(view==='train'));}
 $('tnViewHome').onclick=()=>{view='home';syncViewButtons();};
 $('tnViewTrain').onclick=()=>{view='train';syncViewButtons();};

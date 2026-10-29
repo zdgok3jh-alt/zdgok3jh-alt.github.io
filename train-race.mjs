@@ -97,10 +97,10 @@ function panel(px,py,w,h,view){
  ctx.restore();}
 function finish(){finished=true;playing=false;$('rcAction').disabled=false;const ev=raceEvents(beta());
  const pred=RACE_PREDICTIONS[state.prediction];
- if(state.stage===0){$('rcFeedback').textContent=`予想：『${pred}』／結果：光の速さは車内でもホームでも 1.00 c のまま。ホームでの猫の速さは ${frac(ev.catHomeSpeed)} c で、足し算の ${frac(ev.naiveSum)} c より小さい。到着は車内 光 ${ev.train.light.toFixed(2)}・猫 ${ev.train.cat.toFixed(2)} ／ ホーム 光 ${ev.home.light.toFixed(2)}・猫 ${ev.home.cat.toFixed(2)}。順番は変わらなかった。`;
+ if(state.stage===0){$('rcFeedback').textContent=`予想：『${pred}』／結果：光は両方とも 1.00 c。猫（ホーム）${frac(ev.catHomeSpeed)} c ＜ 足し算の ${frac(ev.naiveSum)} c。到着 車内 光 ${ev.train.light.toFixed(2)}・猫 ${ev.train.cat.toFixed(2)} ／ ホーム 光 ${ev.home.light.toFixed(2)}・猫 ${ev.home.cat.toFixed(2)}`;
   $('rcAction').textContent='次のレースへ →';}
  else{const prev=state.results[0],gapPrev=prev.home.cat-prev.home.light,gapNow=ev.home.cat-ev.home.light;
-  $('rcFeedback').textContent=`予想：『${pred}』／結果：猫の速さは ${frac(ev.catHomeSpeed)} c まで上がったけれど、足し算の ${frac(ev.naiveSum)} c には届かず、光はやはり 1.00 c。到着の差は低速の ${gapPrev.toFixed(2)} 秒から ${gapNow.toFixed(2)} 秒へ、かえって開いた。`;
+  $('rcFeedback').textContent=`予想：『${pred}』／結果：猫 ${frac(ev.catHomeSpeed)} c（足し算の ${frac(ev.naiveSum)} c に届かず）、光は 1.00 c。到着の差 ${gapPrev.toFixed(2)} 秒 → ${gapNow.toFixed(2)} 秒に開いた。`;
   $('rcAction').textContent='結果をまとめる →';}}
 function frame(stamp){const dt=Math.min(.05,(stamp-last)/1000||0);last=stamp;
  if(playing&&card.hidden){time=Math.min(end(),time+dt*end()/12);if(time>=end()&&!finished)finish();}

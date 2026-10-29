@@ -37,7 +37,7 @@ export function createSimultaneityMissions({state,onSample,onOpen,onClose,onPred
  let time=0,playing=false,view='home',records={rear:null,front:null},success=false,autoOpened=false,last=0;
  const ev=()=>simultaneityEvents(state.runBeta);
  const end=()=>ev().arrivals.front.home+.5;
- function configure(){time=0;playing=true;view='home';records={rear:null,front:null};success=false;$('smTime').max=end();$('smTime').value=0;$('smAction').disabled=true;$('smRear').disabled=false;$('smFront').disabled=false;$('smRear').classList.remove('recDone');$('smFront').classList.remove('recDone');$('smTitle').textContent=state.runBeta<.6?'実験1 / ゆっくりした列車':'実験2 / 速い列車';$('smGoal').textContent='中央の発信器が、光を前後へ同時に発射。ホームの時計群で、ランプが点いた時刻を記録しよう。';$('smFeedback').textContent='一往復ではなく「片道の到着」を記録します。再生は約12秒に引き伸ばしています。';syncViewButtons();}
+ function configure(){time=0;playing=true;view='home';records={rear:null,front:null};success=false;$('smTime').max=end();$('smTime').value=0;$('smAction').disabled=true;$('smRear').disabled=false;$('smFront').disabled=false;$('smRear').classList.remove('recDone');$('smFront').classList.remove('recDone');$('smTitle').textContent=state.runBeta<.6?'実験1 / ゆっくりした列車':'実験2 / 速い列車';$('smGoal').textContent='光が前後へ同時発射。ランプが点いた時刻を記録しよう。';$('smFeedback').textContent='片道の到着を記録します（約12秒に引き伸ばし中）。';syncViewButtons();}
  function syncViewButtons(){$('smViewHome').setAttribute('aria-pressed',String(view==='home'));$('smViewTrain').setAttribute('aria-pressed',String(view==='train'));}
  function open(){root.hidden=false;onOpen();configure();}
  openButton.onclick=open;
@@ -50,7 +50,7 @@ export function createSimultaneityMissions({state,onSample,onOpen,onClose,onPred
  $('smStep').onclick=()=>{time=Math.min(end(),time+.05);playing=false;};
  $('smTime').oninput=()=>{time=+$('smTime').value;playing=false;};
  $('smAction').onclick=()=>{if(!success)return;root.hidden=true;playing=false;onSample(null);onClose();};
- function tryRecord(which){if(success||records[which]!==null)return;if(view!=='home'){$('smFeedback').textContent='記録はホームの時計で残します。見る立場を「ホーム」に切り替えてください。';return;}
+ function tryRecord(which){if(success||records[which]!==null)return;if(view!=='home'){$('smFeedback').textContent='記録は「ホーム」の立場で。視点を切り替えよう。';return;}
   const arrival=ev().arrivals[which].home;
   if(recordOk(time,arrival)){records[which]=time;const btn=which==='rear'?$('smRear'):$('smFront');btn.disabled=true;btn.classList.add('recDone');$('smFeedback').textContent=(which==='rear'?'後ろ':'前')+`のランプ：${time.toFixed(2)} 秒で記録しました。`;if(records.rear!==null&&records.front!==null)finish();}
   else if(time<arrival)$('smFeedback').textContent='まだ点いていないみたい。もう少し進めてみよう。';
@@ -58,7 +58,7 @@ export function createSimultaneityMissions({state,onSample,onOpen,onClose,onPred
  $('smRear').onclick=()=>tryRecord('rear');
  $('smFront').onclick=()=>tryRecord('front');
  function finish(){const ok=recordTrial(state,{rear:records.rear,front:records.front});
-  if(!ok){$('smFeedback').textContent='記録はそろいました。でも、車内とホームの両方の立場で見ることがクリアの条件です。駅に戻り、視点を切り替えて走行を見直してください。';return;}
+  if(!ok){$('smFeedback').textContent='記録はそろった。あとは駅に戻り、もう一方の立場で走行を見よう。';return;}
   success=true;playing=false;$('smAction').disabled=false;const e=ev();
   const answer=e.arrivals.rear.home<e.arrivals.front.home?'後ろが先':'同時';
   let text=`予想：${state.prediction?{rear:'後ろが先',same:'同時',front:'前が先'}[state.prediction]:'―'} ／ 結果：${answer}（後ろ ${e.arrivals.rear.home.toFixed(2)} 秒、前 ${e.arrivals.front.home.toFixed(2)} 秒、差 ${e.gap.toFixed(2)}）`;

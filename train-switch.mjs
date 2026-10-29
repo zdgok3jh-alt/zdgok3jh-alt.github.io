@@ -76,7 +76,7 @@ function draw(w,h){
 function finish(){playing=false;$('swFire').disabled=false;const b=beta(),d=delay(),ev=switchEvents(b,d),ok=judgeSwitch(b,d);
  if(ok){doorTarget=1;clearSwitchLevel(state,b,d);syncLevels();
   try{if(state.won)localStorage.setItem('cat-physics-switch-complete','1');}catch{}
-  $('swFeedback').textContent=`ホームで同時！ 前 ${ev.arrivals.front.home.toFixed(2)} 秒 ／ 後ろ ${ev.arrivals.rear.home.toFixed(2)} 秒（差 ${Math.abs(ev.gap).toFixed(2)}）。車内では、後ろを ${d.toFixed(2)} 遅らせて出した分だけズレて点きました。${state.won?' 全レベルクリア！':' 次のレベルはもっと速い。ズラしも大きく。'}`;}
+  $('swFeedback').textContent=`ホームで同時！ 前 ${ev.arrivals.front.home.toFixed(2)} 秒 ／ 後ろ ${ev.arrivals.rear.home.toFixed(2)} 秒（差 ${Math.abs(ev.gap).toFixed(2)}）。車内でのズレは ${d.toFixed(2)} 秒。${state.won?' 全レベルクリア！':' 次はもっと速い列車。ズラしも大きく。'}`;}
  else{const who=ev.gap>0?'後ろ':'前';$('swFeedback').textContent=`${who}が ${Math.abs(ev.gap).toFixed(2)} 秒 先に点きました（前 ${ev.arrivals.front.home.toFixed(2)} ／ 後ろ ${ev.arrivals.rear.home.toFixed(2)}）。許容は差 ${SWITCH_TOLERANCE.toFixed(2)} まで。ズラしを直してもう一度。`;}}
 function frame(stamp){const dt=Math.min(.05,(stamp-last)/1000||0);last=stamp;
  try{openButton.hidden=root.hidden===false||localStorage.getItem('cat-physics-simultaneity-complete')!=='1';}catch{openButton.hidden=true;}
