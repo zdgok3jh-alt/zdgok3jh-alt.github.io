@@ -1,7 +1,7 @@
 // Qualitative radio direction finding and geometric optics, in metres in the XZ plane.
 export const SOURCE={x:7,z:6},MOUNTS=[{x:7,z:-2},{x:17,z:-2}],RECEIVERS=[{x:17,z:-8},{x:22,z:-2}];
 export const wrap=a=>Math.atan2(Math.sin(a),Math.cos(a));
-export function newWaveState(){return{antenna:-Math.PI/2,signal:0,lock:0,signalLocked:false,boat:'waiting',boatX:2.5,aboard:false,installed:[false,false],placed:[null,null],angles:[0,Math.PI/2],splitter:false,lockerOpen:false,receivers:[false,false],charge:0,bridgeOpen:false,won:false};}
+export function newWaveState(){return{antenna:-Math.PI/2,signal:0,lock:0,signalLocked:false,boat:'waiting',boatX:2.5,aboard:false,installed:[false,false],placed:[null,null],angles:[0,Math.PI/2],splitter:false,lockerOpen:false,receivers:[false,false],charge:0,bridgeOpen:false,won:false,predictions:[null,null]};}
 function cross(a,b){return a.x*b.z-a.z*b.x;}
 function segmentHit(p,d,m,angle){const tangent={x:Math.cos(angle),z:Math.sin(angle)},a={x:m.x-tangent.x*1.25,z:m.z-tangent.z*1.25},v={x:tangent.x*2.5,z:tangent.z*2.5},delta={x:a.x-p.x,z:a.z-p.z},den=cross(d,v);if(Math.abs(den)<1e-7)return null;const t=cross(delta,v)/den,u=cross(delta,d)/den;return t>.025&&u>=0&&u<=1?t:null;}
 export function traceLight(s){const paths=[],power=[0,0],queue=[{p:{...SOURCE},d:{x:0,z:-1},power:1,depth:0}];while(queue.length){const q=queue.shift();if(q.depth>6||q.power<.05)continue;let distance=38,kind=null,index=-1;
@@ -18,3 +18,12 @@ export function stepWaves(s,dt){s.signal=Math.exp(-Math.pow(wrap(s.antenna-Math.
  const light=traceLight(s);s.receivers=light.hits;if(light.hits[0])s.lockerOpen=true;
  s.charge=light.hits.every(Boolean)?Math.min(1,s.charge+dt*.4):Math.max(0,s.charge-dt*.5);if(s.charge>=1)s.bridgeOpen=true;return light;}
 export function boardBoat(s){if(s.boat!=='ready')return false;s.aboard=true;s.boat='crossing';return true;}
+// Locate the beam segment that bounces off mirror i, and the reflected
+// segment that follows it. Returns segments from traceLight(s).paths.
+// With the splitter fitted, a mirror has two continuations; the reflected
+// one is the continuation whose direction differs from the incoming beam.
+export function mirrorBounce(s,i){const {paths}=traceLight(s);for(let j=0;j<paths.length;j++){const seg=paths[j];if(Math.hypot(seg.to.x-MOUNTS[i].x,seg.to.z-MOUNTS[i].z)>1.3)continue;const conts=paths.filter(p=>Math.hypot(p.from.x-seg.to.x,p.from.z-seg.to.z)<.1);if(!conts.length)continue;const d={x:seg.to.x-seg.from.x,z:seg.to.z-seg.from.z},dl=Math.hypot(d.x,d.z)||1;const reflected=conts.find(p=>{const e={x:p.to.x-p.from.x,z:p.to.z-p.from.z},el=Math.hypot(e.x,e.z)||1;return Math.abs((d.x/dl)*(e.x/el)+(d.z/dl)*(e.z/el))<.999;})||conts[0];return{incoming:seg,reflected};}return null;}
+// Incident/reflection angles in degrees for the beam hitting mirror i.
+// The reflection law in traceLight makes them equal; both are reported so
+// the player can see the equality. Null when no beam reaches the mirror.
+export function mirrorAngles(s,i){if(!s.installed[i])return null;const b=mirrorBounce(s,i);if(!b)return null;const d={x:b.incoming.to.x-b.incoming.from.x,z:b.incoming.to.z-b.incoming.from.z},len=Math.hypot(d.x,d.z);if(!len)return null;const a=s.angles[i],n={x:-Math.sin(a),z:Math.cos(a)},cos=Math.min(1,Math.abs((d.x/len)*n.x+(d.z/len)*n.z));const deg=Math.round(Math.acos(cos)*180/Math.PI);return{incident:deg,reflection:deg};}

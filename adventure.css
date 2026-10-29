@@ -13,3 +13,9 @@ header>a{font-size:0}header>a::after{content:"🐈";font-size:24px}
 #compass{position:absolute;top:145px;right:12px;width:210px;padding:12px;background:#0b283eea;color:#efffff;border:1px solid #77aabd;border-radius:12px;font-size:14px}#compass span,#compass label{display:block}#compass strong{color:#ffcd72}#compass label{margin-top:8px}#compass select{width:100%;min-height:40px;margin-top:4px;background:#153e54;color:white;border:1px solid #8bb9cb;border-radius:7px;font-size:14px}#compass small{font-size:12px;color:#d0e2e9}@media(max-height:550px){#compass{top:70px;right:130px;width:200px}}
 
 #compass,#flightTitle,#flightDetail,#satellites{display:none!important}#flightPanel{left:auto;right:12px;bottom:22px;width:auto;background:transparent;border:0;padding:0}#flightPanel button{width:58px;height:58px;font-size:28px}#flightPanel:not([data-outcome]):has(#launchCheckControls[hidden]){display:none}#flightPanel[data-outcome]::before{content:"";display:block;width:40px;height:40px;border:6px solid #70f6b1;border-radius:50%;margin:0 auto 10px;box-shadow:0 0 16px #70f6b188}#flightPanel[data-outcome="failure"]::before{border-color:#ff7169;box-shadow:0 0 16px #ff716988}#launchCheckControls button{background:#ed6655;color:white}
+#launchPredictions{border:1px solid #6897a8;border-radius:10px;margin:10px 0;padding:8px 10px}
+#launchPredictions legend{font-size:12px;color:#b4d5e3;padding:0 4px}
+#launchPredictions div{display:flex;gap:6px;flex-wrap:wrap}
+#launchPredictions button{flex:1;margin:0;font-size:13px;padding:8px 4px}
+#launchPredictions button[aria-pressed="true"]{background:#f4bd62;color:#203449;outline:3px solid #ec915f;outline-offset:1px}
+#flightDetail{white-space:pre-line}

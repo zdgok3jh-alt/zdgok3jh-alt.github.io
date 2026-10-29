@@ -1,7 +1,7 @@
-export function newWindState(){return{cartZ:12,cartV:0,sail:-Math.PI/2,aboard:false,arrived:false,installed:[false,false],placed:[null,null],angle:0,mode:'prediction',predictionSamples:[false,false],samples:[false,false,false,false],dwell:0,lastSector:-1,gateOpen:false,won:false};}
-export function stepWind(s,dt){
+export function newWindState(){return{cartZ:12,cartV:0,sail:-Math.PI/2,aboard:false,arrived:false,installed:[false,false],placed:[null,null],angle:0,mode:'prediction',predictionSamples:[false,false],samples:[false,false,false,false],dwell:0,lastSector:-1,gateOpen:false,won:false,playerPrediction:null};}
+export function stepWind(s,dt,observing=true){
  if(s.aboard&&!s.arrived){const drive=Math.max(0,Math.cos(s.sail));s.cartV=Math.max(0,Math.min(2.4,s.cartV+(drive*2.8-.5-s.cartV*.5)*dt));s.cartZ=Math.max(0,s.cartZ-s.cartV*dt);if(s.cartZ===0){s.arrived=true;s.aboard=false;s.cartV=0;}}
- if(s.installed.every(Boolean)){const a=((s.angle%(Math.PI*2))+Math.PI*2)%(Math.PI*2),sector=Math.round(a/(Math.PI/2))%4,error=Math.abs(Math.atan2(Math.sin(a-sector*Math.PI/2),Math.cos(a-sector*Math.PI/2)));if(error<.08){if(s.lastSector!==sector){s.lastSector=sector;s.dwell=0;}s.dwell+=dt;if(s.dwell>3.2){if(s.mode==='prediction'){s.predictionSamples[sector%2]=true;if(s.predictionSamples.every(Boolean)){s.mode='experiment';s.dwell=0;s.lastSector=-1;}}else{s.samples[sector]=true;if((s.samples[0]||s.samples[2])&&(s.samples[1]||s.samples[3])){s.mode='complete';s.gateOpen=true;}}}}else{s.dwell=0;s.lastSector=-1;}}
+ if(s.installed.every(Boolean)){const a=((s.angle%(Math.PI*2))+Math.PI*2)%(Math.PI*2),sector=Math.round(a/(Math.PI/2))%4,error=Math.abs(Math.atan2(Math.sin(a-sector*Math.PI/2),Math.cos(a-sector*Math.PI/2)));if(error<.08){if(s.lastSector!==sector){s.lastSector=sector;s.dwell=0;}if(observing)s.dwell+=dt;else s.dwell=Math.max(0,s.dwell-dt);if(s.dwell>3.2){if(s.mode==='prediction'){s.predictionSamples[sector%2]=true;if(s.predictionSamples.every(Boolean)){s.mode='experiment';s.dwell=0;s.lastSector=-1;}}else{s.samples[sector]=true;if((s.samples[0]||s.samples[2])&&(s.samples[1]||s.samples[3])){s.mode='complete';s.gateOpen=true;}}}}else{s.dwell=0;s.lastSector=-1;}}
 
 }
 // An ideal equal-arm interferometer has no orientation-dependent fringe shift here.
@@ -16,3 +16,7 @@ export const clampZoom=v=>Math.max(.55,Math.min(4,v));export function stickAxis(
 
 // Exaggerated teaching model, not a numerical reconstruction of 1887 apparatus.
 export function opticalComparison(angle){const delay=.45*Math.cos(2*angle);return {prediction:{times:[2+delay,2-delay],phase:2.5*Math.cos(2*angle)},experiment:{times:[2,2],phase:0}};}
+// The model shown in the "prediction" phase follows the player's own pick:
+// 'move' fringes shift with orientation, 'still' never moves, 'reverse'
+// shifts the opposite way. The experiment model never depends on the pick.
+export function playerModel(prediction,angle){const phase=2.5*Math.cos(2*angle),delay=.45*Math.cos(2*angle);if(prediction==='still')return{times:[2,2],phase:0};if(prediction==='reverse')return{times:[2-delay,2+delay],phase:-phase};return{times:[2+delay,2-delay],phase};}
